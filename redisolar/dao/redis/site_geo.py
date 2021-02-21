@@ -54,6 +54,10 @@ class SiteGeoDaoRedis(SiteGeoDaoBase, RedisDaoBase):
 
     def _find_by_geo_with_capacity(self, query: GeoQuery, **kwargs) -> Set[Site]:
         # START Challenge #5
+        site_ids = self.redis.georadius(
+            self.key_schema.site_geo_key(), query.coordinate.lng, query.coordinate.lat,
+            query.radius, query.radius_unit.value
+        )
         # Your task: Get the sites matching the GEO query.
         # END Challenge #5
 
@@ -66,12 +70,18 @@ class SiteGeoDaoRedis(SiteGeoDaoBase, RedisDaoBase):
         #
         # Make sure to run any Redis commands against a Pipeline object
         # for better performance.
+        for site_id in site_ids:
+            p.zscore(self.key_schema.capacity_ranking_key(), site_id)
+
+        scores = dict(zip(site_ids, p.execute()))
+
+        # p.hgetall(self.key_schema.site_hash_key(site_id))
         # END Challenge #5
 
         # Delete the next lines after you've populated a `site_ids`
         # and `scores` variable.
-        site_ids: List[str] = []
-        scores: Dict[str, float] = {}
+        # site_ids: List[str] = []
+        # scores: Dict[str, float] = {}
 
         for site_id in site_ids:
             if scores[site_id] and scores[site_id] > CAPACITY_THRESHOLD:
