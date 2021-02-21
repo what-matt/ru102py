@@ -28,6 +28,21 @@ class FeedDaoRedis(FeedDaoBase, RedisDaoBase):
                 pipeline: redis.client.Pipeline) -> None:
         """Helper method to insert a meter reading."""
         # START Challenge #6
+        meterd_serialized = MeterReadingSchema().dump(meter_reading)
+        
+        pipeline.xadd(
+            self.key_schema.global_feed_key(),
+            meterd_serialized,
+            maxlen=self.GLOBAL_MAX_FEED_LENGTH
+        )
+
+        pipeline.xadd(
+            self.key_schema.feed_key(meter_reading.site_id),
+            meterd_serialized,
+            maxlen=self.SITE_MAX_FEED_LENGTH
+        )
+
+        # pipeline.execute()
         # END Challenge #6
 
     def get_recent_global(self, limit: int, **kwargs) -> List[MeterReading]:
